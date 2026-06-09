@@ -1,0 +1,27 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# --- Dependencies ---
+node_modules/
+# extracted extension repos ship no committed lockfile (see .github/workflows/ci.yml)
+pnpm-lock.yaml
+
+# --- Build output (tsc outDir) ---
+dist/
+
+# --- Testing ---
+coverage/
+
+# --- npm pack output ---
+*.tgz
+
+# --- Debug logs ---
+*.log
+
+# --- Env files & secrets ---
+.env*
+!.env.example
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
