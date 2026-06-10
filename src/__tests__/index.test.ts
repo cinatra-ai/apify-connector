@@ -85,6 +85,8 @@ beforeEach(() => {
       saveConnectionRecord: saveNangoConnectionRecord,
       removeConnectionRecord: removeNangoConnectionRecord,
       deleteConnection: deleteNangoConnection,
+      // External-MCP toolbox bearer (unused by this suite's code paths).
+      buildBearerAuthHeader: vi.fn(async () => ({ Authorization: "Bearer test" })),
       providerConfigKeys: { apify: "cinatra-apify" },
       connectionIds: { apify: "cinatra-apify" },
     },

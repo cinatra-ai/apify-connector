@@ -57,6 +57,17 @@ export interface ApifyNangoCapability {
   removeConnectionRecord(connectorKey: "apify", connectionId: string): Promise<unknown>;
   /** Delete the Nango connection (scrubs stored credentials). */
   deleteConnection(providerConfigKey: string, connectionId: string): Promise<unknown>;
+  /**
+   * Nango-vault bearer header builder for the external-MCP toolbox (mirrors
+   * the nango-connector helper the host binds for Drupal): returns the
+   * `{ Authorization }` header or `null` when Nango is unconfigured / the
+   * credential is missing. `label` is warn-only logging text — NEVER a token.
+   */
+  buildBearerAuthHeader(input: {
+    providerConfigKey: string;
+    connectionId: string;
+    label: string;
+  }): Promise<{ Authorization: string } | null>;
   /** Provider-config-key bag — only this connector's slug is exposed. */
   providerConfigKeys: { apify: string };
   /** Connection-id bag — only this connector's slug is exposed. */

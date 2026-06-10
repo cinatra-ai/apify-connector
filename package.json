@@ -32,6 +32,10 @@
     "apiVersion": "cinatra.ai/v1",
     "kind": "connector",
     "displayName": "Apify",
+    "providesExternalMcpToolbox": true,
+    "requestedHostPorts": [
+      "nango"
+    ],
     "dependencies": []
   }
 }
