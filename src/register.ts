@@ -70,6 +70,14 @@ export function register(ctx: ExtensionHostContext): void {
         nango().removeConnectionRecord(connectorKey, connectionId),
       deleteConnection: (providerConfigKey, connectionId) =>
         nango().deleteConnection(providerConfigKey, connectionId),
+      // Bearer-header builder for the manifest-discovered external-MCP toolbox
+      // (src/mcp/toolbox.ts): once the host cutover removes the legacy boot
+      // wiring, this entry is the only binder of ApifyConnectorDeps, so the
+      // deps surface added with the toolbox module must be bound here too.
+      buildBearerAuthHeader: async (input) =>
+        (await nango().buildBearerAuthHeader(input)) as {
+          Authorization: string;
+        } | null,
       get providerConfigKeys() {
         return nango().providerConfigKeys as ApifyConnectorDeps["nango"]["providerConfigKeys"];
       },

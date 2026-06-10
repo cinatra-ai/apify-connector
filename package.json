@@ -7,7 +7,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./register": "./src/register.ts",
-    "./settings-page": "./src/settings-page.tsx",
+    "./mcp-toolbox": "./src/mcp/toolbox.ts",
     "./setup-page": "./src/setup-page.tsx"
   },
   "types": "src/index.ts",
