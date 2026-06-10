@@ -4,6 +4,12 @@
   "license": "Apache-2.0",
   "type": "module",
   "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./register": "./src/register.ts",
+    "./mcp-toolbox": "./src/mcp/toolbox.ts",
+    "./setup-page": "./src/setup-page.tsx"
+  },
   "types": "src/index.ts",
   "scripts": {
     "test": "vitest"
@@ -33,9 +39,12 @@
     "kind": "connector",
     "displayName": "Apify",
     "providesExternalMcpToolbox": true,
+    "dependencies": [],
+    "serverEntry": "./register",
     "requestedHostPorts": [
-      "nango"
+      "nango",
+      "capabilities"
     ],
-    "dependencies": []
+    "sdkAbiRange": "^2"
   }
 }
