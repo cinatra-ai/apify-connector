@@ -3,10 +3,12 @@
 // Transport-registration cutover: the host no longer statically imports `registerApifyConnector` — this
 // entry binds the connector's host deps AT ACTIVATION by adapting the
 // per-concern host services published in the capability registry
-// (`@cinatra-ai/host:connector-config`, `@cinatra-ai/host:external-mcp-registry`,
-// `@cinatra-ai/host:nango-connection-storage`). Every adapter field resolves
-// the host service LAZILY at call time, so activation order against the host's
-// boot imports never matters.
+// (`@cinatra-ai/host:connector-config`, `@cinatra-ai/host:external-mcp-registry`)
+// plus the connector-authored `nango-system` surface (the legacy
+// `@cinatra-ai/host:nango-connection-storage` adapter id is retired —
+// cinatra#151 Stage 3). Every adapter field resolves the host service LAZILY
+// at call time, so activation order against the host's boot imports never
+// matters.
 //
 // It also registers the `llm-toolbox` capability provider serving the
 // `apify-connector` declared toolbox id — the registration-driven replacement
@@ -20,7 +22,7 @@ import type {
   ExtensionHostContext,
   HostConnectorConfigService,
   HostExternalMcpRegistryService,
-  HostNangoConnectionStorageService,
+  NangoSystemSurface,
 } from "@cinatra-ai/sdk-extensions";
 import { registerApifyConnector, type ApifyConnectorDeps } from "./deps";
 import { APIFY_TOOLBOX_ID, buildApifyMcpServerTools } from "./llm-toolbox";
@@ -32,7 +34,7 @@ function hostService<T>(ctx: ExtensionHostContext, capability: string): T {
   if (!provider) {
     throw new Error(
       `${PACKAGE_NAME}: host service "${capability}" is not registered — ` +
-        `the host boot wiring (register-transport-connectors) must run before connector calls.`,
+        `the host boot wiring (register-host-connector-services) must run before connector calls.`,
     );
   }
   return provider.impl as T;
@@ -43,11 +45,19 @@ export function register(ctx: ExtensionHostContext): void {
     hostService<HostConnectorConfigService>(ctx, "@cinatra-ai/host:connector-config");
   const externalMcp = () =>
     hostService<HostExternalMcpRegistryService>(ctx, "@cinatra-ai/host:external-mcp-registry");
-  const nango = () =>
-    hostService<HostNangoConnectionStorageService>(
-      ctx,
-      "@cinatra-ai/host:nango-connection-storage",
-    );
+  // The connector-authored nango-system surface (registered by the nango
+  // gateway's own register(ctx) — a systemExtension, required at boot).
+  const nango = (): NangoSystemSurface => {
+    const provider = ctx.capabilities.resolveProviders("nango-system")[0];
+    const surface = provider?.impl as NangoSystemSurface | undefined;
+    if (!surface || typeof surface.isNangoConfigured !== "function") {
+      throw new Error(
+        `${PACKAGE_NAME}: the "nango-system" capability surface is not registered — ` +
+          `resolve at call time (post-activation), never at module eval.`,
+      );
+    }
+    return surface;
+  };
 
   const deps: ApifyConnectorDeps = {
     readConnectorConfigFromDatabase: (connectorId, fallback) =>
@@ -57,32 +67,40 @@ export function register(ctx: ExtensionHostContext): void {
     upsertExternalMcpServer: (input) =>
       externalMcp().upsertServer(input as unknown as Record<string, unknown>),
     deleteExternalMcpServer: (id) => externalMcp().deleteServer(id),
+    // Members delegate to the nango-system surface at CALL time (key maps are
+    // getters for the same reason). Inputs are cast at this boundary where the
+    // surface owns the wider shape (NangoConnectorKey union / record shape) —
+    // this connector only ever passes valid values.
     nango: {
-      isConfigured: () => nango().isConfigured(),
+      isConfigured: () => nango().isNangoConfigured(),
       ensureConnectorIntegration: (connectorKey) =>
-        nango().ensureConnectorIntegration(connectorKey),
-      importConnection: (input) => nango().importConnection(input),
+        nango().ensureNangoConnectorIntegration(connectorKey),
+      importConnection: (input) =>
+        nango().importNangoConnection(input as Parameters<NangoSystemSurface["importNangoConnection"]>[0]),
       getCredentials: (providerConfigKey, connectionId, opts) =>
-        nango().getCredentials(providerConfigKey, connectionId, opts),
+        nango().getNangoCredentials(providerConfigKey, connectionId, opts),
       saveConnectionRecord: (connectorKey, record) =>
-        nango().saveConnectionRecord(connectorKey, record),
+        nango().saveNangoConnectionRecord(
+          connectorKey,
+          record as Parameters<NangoSystemSurface["saveNangoConnectionRecord"]>[1],
+        ),
       removeConnectionRecord: (connectorKey, connectionId) =>
-        nango().removeConnectionRecord(connectorKey, connectionId),
+        nango().removeNangoConnectionRecord(connectorKey, connectionId),
       deleteConnection: (providerConfigKey, connectionId) =>
-        nango().deleteConnection(providerConfigKey, connectionId),
+        nango().deleteNangoConnection(providerConfigKey, connectionId),
       // Bearer-header builder for the manifest-discovered external-MCP toolbox
       // (src/mcp/toolbox.ts): once the host cutover removes the legacy boot
       // wiring, this entry is the only binder of ApifyConnectorDeps, so the
       // deps surface added with the toolbox module must be bound here too.
       buildBearerAuthHeader: async (input) =>
-        (await nango().buildBearerAuthHeader(input)) as {
+        (await nango().buildBearerAuthHeaderFromNango(input)) as {
           Authorization: string;
         } | null,
       get providerConfigKeys() {
-        return nango().providerConfigKeys as ApifyConnectorDeps["nango"]["providerConfigKeys"];
+        return nango().providerConfigKeys;
       },
       get connectionIds() {
-        return nango().connectionIds as ApifyConnectorDeps["nango"]["connectionIds"];
+        return nango().connectionIds;
       },
     },
   };

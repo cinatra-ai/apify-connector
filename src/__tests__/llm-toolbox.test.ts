@@ -21,21 +21,21 @@ function stubDeps() {
   });
 }
 
-const isConfigured = vi.fn();
-const buildBearerAuthHeader = vi.fn();
+const isNangoConfigured = vi.fn();
+const buildBearerAuthHeaderFromNango = vi.fn();
 
 function ctxWithNango(present = true): ExtensionHostContext {
   return {
     capabilities: {
       registerProvider: () => {},
       resolveProviders: (capability: string) =>
-        present && capability === "@cinatra-ai/host:nango-connection-storage"
+        present && capability === "nango-system"
           ? [
               {
-                packageName: "@cinatra-ai/host",
+                packageName: "@cinatra-ai/nango-connector",
                 impl: {
-                  isConfigured,
-                  buildBearerAuthHeader,
+                  isNangoConfigured,
+                  buildBearerAuthHeaderFromNango,
                   providerConfigKeys: { apify: "cinatra-apify" },
                 },
               },
@@ -57,7 +57,7 @@ describe("buildApifyMcpServerTools — in-package builder", () => {
   });
 
   it("returns [] when Nango is not configured + no connection saved (no warn)", async () => {
-    isConfigured.mockReturnValue(false);
+    isNangoConfigured.mockReturnValue(false);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(await buildApifyMcpServerTools(ctxWithNango(), "openai")).toEqual([]);
     expect(warn).not.toHaveBeenCalled();
@@ -65,7 +65,7 @@ describe("buildApifyMcpServerTools — in-package builder", () => {
   });
 
   it("returns [] AND warns loudly when Nango is unconfigured but a connection was saved", async () => {
-    isConfigured.mockReturnValue(false);
+    isNangoConfigured.mockReturnValue(false);
     settingsRow.value = { lastValidatedAt: "x", username: "u", nangoConnectionId: "cinatra-apify" };
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(await buildApifyMcpServerTools(ctxWithNango(), "openai")).toEqual([]);
@@ -75,23 +75,23 @@ describe("buildApifyMcpServerTools — in-package builder", () => {
   });
 
   it("returns [] when no nangoConnectionId is stored (never connected)", async () => {
-    isConfigured.mockReturnValue(true);
+    isNangoConfigured.mockReturnValue(true);
     settingsRow.value = { lastValidatedAt: "x", username: "u" };
     expect(await buildApifyMcpServerTools(ctxWithNango(), "openai")).toEqual([]);
-    expect(buildBearerAuthHeader).not.toHaveBeenCalled();
+    expect(buildBearerAuthHeaderFromNango).not.toHaveBeenCalled();
   });
 
   it("returns [] when the bearer header cannot be built (no token)", async () => {
-    isConfigured.mockReturnValue(true);
+    isNangoConfigured.mockReturnValue(true);
     settingsRow.value = { nangoConnectionId: "cinatra-apify" };
-    buildBearerAuthHeader.mockResolvedValue(null);
+    buildBearerAuthHeaderFromNango.mockResolvedValue(null);
     expect(await buildApifyMcpServerTools(ctxWithNango(), "openai")).toEqual([]);
   });
 
   it("builds the single Apify MCP server tool with the vault bearer header", async () => {
-    isConfigured.mockReturnValue(true);
+    isNangoConfigured.mockReturnValue(true);
     settingsRow.value = { nangoConnectionId: "cinatra-apify" };
-    buildBearerAuthHeader.mockResolvedValue({ Authorization: "Bearer tok" });
+    buildBearerAuthHeaderFromNango.mockResolvedValue({ Authorization: "Bearer tok" });
     const tools = await buildApifyMcpServerTools(ctxWithNango(), "openai");
     expect(tools).toHaveLength(1);
     expect(tools[0]).toMatchObject({
@@ -101,7 +101,7 @@ describe("buildApifyMcpServerTools — in-package builder", () => {
       headers: { Authorization: "Bearer tok" },
       requireApproval: "never",
     });
-    expect(buildBearerAuthHeader).toHaveBeenCalledWith({
+    expect(buildBearerAuthHeaderFromNango).toHaveBeenCalledWith({
       providerConfigKey: "cinatra-apify",
       connectionId: "cinatra-apify",
       label: "apify",
