@@ -7,18 +7,16 @@ import "server-only";
 // are built here and surfaced to the LLM injection paths through the
 // `llm-toolbox` capability this connector registers in ./register.ts. The
 // Bearer token comes from the Nango vault via the host's
-// `@cinatra-ai/host:nango-connection-storage` service (resolved through the
-// `ctx.capabilities` port — no host import). The MCP server URL stays clean
+// connector-authored `nango-system` surface (resolved through the
+// `ctx.capabilities` port — no host import; the legacy
+// `@cinatra-ai/host:nango-connection-storage` adapter id is retired). The MCP server URL stays clean
 // (`https://mcp.apify.com`); the token rides in the `Authorization` header.
 //
 // The returned tool objects mirror the host LLM layer's `LlmMcpServerTool`
 // shape STRUCTURALLY (this package must stay SDK-only, so it does not import
 // the llm package); the host validates the shape at the injection boundary.
 
-import type {
-  ExtensionHostContext,
-  HostNangoConnectionStorageService,
-} from "@cinatra-ai/sdk-extensions";
+import type { ExtensionHostContext, NangoSystemSurface } from "@cinatra-ai/sdk-extensions";
 import { getApifySettings } from "./index";
 
 const APIFY_MCP_URL = "https://mcp.apify.com";
@@ -37,11 +35,11 @@ type McpServerToolLike = {
   requireApproval?: "never" | "always" | "read-only";
 };
 
-function nangoService(ctx: ExtensionHostContext): HostNangoConnectionStorageService | null {
-  const provider = ctx.capabilities.resolveProviders(
-    "@cinatra-ai/host:nango-connection-storage",
-  )[0];
-  return (provider?.impl as HostNangoConnectionStorageService | undefined) ?? null;
+function nangoService(ctx: ExtensionHostContext): NangoSystemSurface | null {
+  const provider = ctx.capabilities.resolveProviders("nango-system")[0];
+  const surface = provider?.impl as NangoSystemSurface | undefined;
+  if (!surface || typeof surface.isNangoConfigured !== "function") return null;
+  return surface;
 }
 
 export async function buildApifyMcpServerTools(
@@ -51,7 +49,7 @@ export async function buildApifyMcpServerTools(
   try {
     const settings = getApifySettings();
     const nango = nangoService(ctx);
-    if (!nango || !nango.isConfigured()) {
+    if (!nango || !nango.isNangoConfigured()) {
       // Fail closed loudly, matching the Drupal builder. Only warn when there's
       // actually a connection that would otherwise have been injected.
       if (settings.nangoConnectionId) {
@@ -65,7 +63,7 @@ export async function buildApifyMcpServerTools(
       // No stored connection to inject.
       return [];
     }
-    const headers = (await nango.buildBearerAuthHeader({
+    const headers = (await nango.buildBearerAuthHeaderFromNango({
       providerConfigKey: nango.providerConfigKeys.apify,
       connectionId: settings.nangoConnectionId,
       label: "apify",
