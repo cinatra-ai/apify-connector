@@ -96,11 +96,14 @@ export function register(ctx: ExtensionHostContext): void {
         (await nango().buildBearerAuthHeaderFromNango(input)) as {
           Authorization: string;
         } | null,
+      // Vendor identity is OPEN at the SDK (#12): the surface's key maps are
+      // `Record<string, string>` (no SDK-frozen union), so this connector
+      // projects ITS OWN key out of the open map at the boundary.
       get providerConfigKeys() {
-        return nango().providerConfigKeys;
+        return { apify: nango().providerConfigKeys.apify };
       },
       get connectionIds() {
-        return nango().connectionIds;
+        return { apify: nango().connectionIds.apify };
       },
     },
   };
