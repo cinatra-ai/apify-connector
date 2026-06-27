@@ -6,6 +6,7 @@ import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Field, FieldLabel } from "./components/ui/field";
 import { Alert, AlertDescription } from "./components/ui/alert";
+import { Link } from "./components/ui/link";
 import { getApifyStatus, getApifyNangoReady } from "@cinatra-ai/apify-connector";
 import { saveApifyConnectionAction, clearApifyConnectionAction } from "./apify-setup-actions";
 
@@ -49,7 +50,7 @@ export async function ApifyConnectorPageImpl(props: {
         <PageContent className="flex flex-col gap-6 pb-8">
           <Alert variant="warning" className="rounded-control">
             <AlertDescription>
-              Nango is not configured — the Apify connector is disabled. Configure it at <a className="underline" href="/configuration/llm/nango">/configuration/llm/nango</a> first.
+              Nango is not configured — the Apify connector is disabled. Configure it at <Link href="/configuration/llm/nango">/configuration/llm/nango</Link> first.
             </AlertDescription>
           </Alert>
         </PageContent>
