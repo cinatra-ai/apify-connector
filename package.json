@@ -11,8 +11,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./register": "./src/register.ts",
-    "./mcp-toolbox": "./src/mcp/toolbox.ts",
-    "./setup-page": "./src/setup-page.tsx"
+    "./mcp-toolbox": "./src/mcp/toolbox.ts"
   },
   "types": "src/index.ts",
   "scripts": {
@@ -53,8 +52,56 @@
     "serverEntry": "./register",
     "requestedHostPorts": [
       "nango",
-      "capabilities"
+      "capabilities",
+      "ui"
     ],
-    "sdkAbiRange": "^2"
+    "sdkAbiRange": "^2",
+    "uiSurface": "schema-config",
+    "configSchema": {
+      "title": "Apify",
+      "description": "Connect an Apify API token so Apify actor tools are available in every LLM call. The token is validated against Apify and stored securely via the connection service.",
+      "fields": [
+        {
+          "kind": "banner",
+          "label": "Result",
+          "variants": [
+            { "name": "saved", "tone": "success", "message": "Apify connection saved." },
+            { "name": "cleared", "tone": "warning", "message": "Apify connection cleared." },
+            { "name": "error", "tone": "destructive", "message": "Something went wrong." }
+          ]
+        },
+        {
+          "kind": "advisory",
+          "label": "API token storage",
+          "tone": "info",
+          "probeActionId": "connectionServiceReady",
+          "whenReady": "API tokens are stored securely via the connection service.",
+          "whenNotReady": "Configure the connection service first so Apify requests can authenticate."
+        },
+        {
+          "kind": "status-probe",
+          "label": "Connection",
+          "actionId": "connectionStatus",
+          "description": "Check whether the Apify token is configured and the MCP server is active."
+        },
+        {
+          "kind": "secret",
+          "key": "apiKey",
+          "label": "Apify API token",
+          "description": "Create a token at console.apify.com. Write-only — the stored value is never shown again."
+        },
+        {
+          "kind": "named-action",
+          "label": "Save connection",
+          "actionId": "saveConnection"
+        },
+        {
+          "kind": "named-action",
+          "label": "Clear connection",
+          "actionId": "clearConnection",
+          "confirm": "Clear the stored Apify connection?"
+        }
+      ]
+    }
   }
 }
