@@ -78,14 +78,6 @@
           ]
         },
         {
-          "kind": "advisory",
-          "label": "API token storage",
-          "tone": "info",
-          "probeActionId": "connectionServiceReady",
-          "whenReady": "API tokens are stored securely via the connection service.",
-          "whenNotReady": "Configure the connection service first so Apify requests can authenticate."
-        },
-        {
           "kind": "status-probe",
           "label": "Connection",
           "actionId": "connectionStatus",
@@ -107,6 +99,23 @@
           "label": "Clear connection",
           "actionId": "clearConnection",
           "confirm": "Clear the stored Apify connection?"
+        }
+      ],
+      "tabs": [
+        {
+          "id": "help",
+          "label": "Help",
+          "fields": [
+            {
+              "kind": "advisory",
+              "label": "Apify setup",
+              "tone": "info",
+              "probeActionId": "connectionServiceReady",
+              "whenReady": "API tokens are stored securely via the connection service. Use the Setup tab to update or clear your Apify API token.",
+              "whenNotReady": "Configure the connection service first so Apify requests can authenticate. Once it is ready, create a token at console.apify.com and paste it into the Setup tab's API token field, then click Save connection — the token is validated against Apify before it is stored and is never shown again.",
+              "description": "Read-only setup guidance — nothing on this tab is saved."
+            }
+          ]
         }
       ]
     }
