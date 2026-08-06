@@ -53,6 +53,7 @@
       "name": "Cinatra"
     },
     "displayName": "Apify",
+    "logo": "./cinatra/logo.svg",
     "providesExternalMcpToolbox": true,
     "dependencies": [],
     "serverEntry": "./register",
